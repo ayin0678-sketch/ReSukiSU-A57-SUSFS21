@@ -184,6 +184,21 @@ int ksu_set_app_profile(struct app_profile *profile)
 {
     struct perm_data *p, *np;
     int result = 0;
+    /*
+     * OPPO A57 compatibility:
+     * accept manager app_profile v3 and migrate it to current v4.
+     */
+    if (profile && profile->version == 3) {
+        if (profile->allow_su)
+            profile->rp_config.profile.flags = FLAG_KSU_NO_NEW_PRIVS;
+
+        profile->version = KSU_APP_PROFILE_VER;
+
+        pr_info("migrated incoming app profile v3 to v%d: key=%s uid=%d\n",
+                KSU_APP_PROFILE_VER,
+                profile->key,
+                profile->curr_uid);
+    }
 
     if (!profile_valid(profile)) {
         pr_err("Failed to set app profile: invalid profile!\n");
@@ -314,6 +329,10 @@ bool ksu_uid_should_umount(uid_t uid)
 
     if (unlikely(ksu_is_manager_uid(uid))) {
         // we should not umount on manager!
+        return false;
+    }
+    if (unlikely(uid == WEBVIEW_ZYGOTE_UID)) {
+        // we should not umount for webview zygote
         return false;
     }
 #ifdef CONFIG_KSU_DISABLE_POLICY

@@ -119,7 +119,9 @@ static struct security_hook_list ksu_hooks[] = {
     LSM_HOOK_INIT(bprm_committed_creds, ksu_handle_bprm_committed_creds),
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
     LSM_HOOK_INIT(key_permission, ksu_handle_key_permission),
+#endif
 };
 
 void __init ksu_lsm_hook_built_in_init(void)
@@ -158,6 +160,12 @@ void __init ksu_lsm_hook_built_in_init(void)
 #define IF_KSU_COMPAT_NO_POST_EXECVE_HOOK(x)
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+#define IF_KEY_PERMISSION_HOOK(x) x
+#else
+#define IF_KEY_PERMISSION_HOOK(x)
+#endif
+
 #define LSM_HOOK_LIST(HOOK_ITEM)                                                                                       \
     HOOK_ITEM(inode_rename, ksu_inode_rename,                                                                          \
               (struct inode * old_inode, struct dentry * old_dentry, struct inode * new_inode,                         \
@@ -170,8 +178,9 @@ void __init ksu_lsm_hook_built_in_init(void)
         HOOK_ITEM(file_permission, ksu_file_permission, (struct file * file, int mask), (file, mask)))                 \
     IF_KSU_COMPAT_NO_POST_EXECVE_HOOK(                                                                                 \
         HOOK_ITEM(bprm_committed_creds, ksu_handle_bprm_committed_creds, (struct linux_binprm * bprm), (bprm)))        \
-    HOOK_ITEM(key_permission, ksu_handle_key_permission, (key_ref_t key_ref, const struct cred *cred, unsigned perm),  \
-              (key_ref, cred, perm))
+    IF_KEY_PERMISSION_HOOK(                                                                                            \
+        HOOK_ITEM(key_permission, ksu_handle_key_permission, (key_ref_t key_ref, const struct cred *cred, unsigned perm), \
+                  (key_ref, cred, perm)))
 
 #define STRIP_PARENS(...) __VA_ARGS__
 

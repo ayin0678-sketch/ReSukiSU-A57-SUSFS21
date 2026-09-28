@@ -207,6 +207,11 @@ void setup_ksu_cred_session_keyring(void)
         return;
     }
 
+    if (strcmp(current->comm, "init")) {
+        // we are only interested in `init` process
+        return;
+    }
+
     if (init_session_keyring == NULL) {
         // if init_session_keyring is null, skip
         return;
